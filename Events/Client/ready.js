@@ -8,7 +8,7 @@ module.exports = {
 
         loadCommands(client)
 
-        client.user.setActivity("Server", { type: ActivityType.Watching });
+        client.user.setActivity("AlgoMod", { type: ActivityType.Watching });
 
         console.log("Ready!")
     }
