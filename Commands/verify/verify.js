@@ -155,45 +155,50 @@ module.exports = {
 
                     
                     try {
-        
                         if (getFileDataFromDB) {
-                            const fileFound = await drive.files.get({ fileId: getFileDataFromDB.FileId }).catch(err => console.log(err))
-                            console.log(fileFound)
-                            if (fileFound) {
-                                const deleteResponse = await drive.files.delete({
-                                    fileId: getFileDataFromDB.FileId
-                                })
-                                console.log(deleteResponse.data, deleteResponse.status)
-                            } 
-                            getFileDataFromDB.deleteOne();
-                        }
-
-                
-        
-                        const response = await drive.files.create({
+                          const response = await drive.files.update({
+                            fileId: getFileDataFromDB.FileId,
+                            media: {
+                              mimeType: "text/plain",
+                              body: fs.createReadStream(filePath),
+                            },
+                          });
+                      
+                          console.log(response.data);
+                          getFileDataFromDB.FileName = response.data.name;
+                          getFileDataFromDB.save();
+                        } else {
+                          const response = await drive.files.create({
                             requestBody: {
-                                name: filePath,
-                                mimeType: "text/plain"
+                              name: filePath,
+                              mimeType: "text/plain",
                             },
                             media: {
-                                mimeType: "text/plain",
-                                body: fs.createReadStream(filePath)
-                            }
-                        })
-
-                        console.log(response.data);
-
-                        new fileData({
+                              mimeType: "text/plain",
+                              body: fs.createReadStream(filePath),
+                            },
+                          });
+                      
+                          console.log(response.data);
+                          // Save the file metadata in the database
+                          new fileData({
                             GuildId: interaction.guildId,
                             ChannelID: interaction.channelId,
                             FileId: response.data.id,
                             mimeType: response.data.mimeType,
-                            FileName: response.data.name
-                        }).save()
-                
-                    } catch (err) {
-                        console.log(err)
-                    }
+                            FileName: response.data.name,
+                          }).save();
+                        }
+                      } catch (err) {
+                        console.log(err);
+                      
+                        const ErrorEmbed = new EmbedBuilder()
+                          .setColor("Green")
+                          .setTitle("Error occurred")
+                          .setDescription(err.message);
+                      
+                        return inter.followUp({ embeds: [ErrorEmbed] });
+                      }
 
                     await interaction.member.roles.add(VERIFIED_ROLE).catch(err => console.log(err));
 
@@ -289,53 +294,51 @@ module.exports = {
 
                     
                     try {
-
                         if (getFileDataFromDB) {
-                            const fileFound = await drive.files.get({ fileId: getFileDataFromDB.FileId }).catch(err => console.log(err))
-
-                            if (fileFound) {
-                                const deleteResponse = await drive.files.delete({
-                                    fileId: getFileDataFromDB.FileId
-                                })
-                                console.log(deleteResponse.data, deleteResponse.status)
-                            }
-                            getFileDataFromDB.deleteOne();
-                        }
-
-                
-        
-                        const response = await drive.files.create({
+                          const response = await drive.files.update({
+                            fileId: getFileDataFromDB.FileId,
+                            media: {
+                              mimeType: "text/plain",
+                              body: fs.createReadStream(filePath),
+                            },
+                          });
+                      
+                          console.log(response.data);
+                          // Update the file metadata in the database if needed
+                          getFileDataFromDB.FileName = response.data.name;
+                          getFileDataFromDB.save();
+                        } else {
+                          const response = await drive.files.create({
                             requestBody: {
-                                name: filePath,
-                                mimeType: "text/plain"
+                              name: filePath,
+                              mimeType: "text/plain",
                             },
                             media: {
-                                mimeType: "text/plain",
-                                body: fs.createReadStream(filePath)
-                            }
-                        })
-
-                        console.log(response.data);
-
-                        new fileData({
+                              mimeType: "text/plain",
+                              body: fs.createReadStream(filePath),
+                            },
+                          });
+                      
+                          console.log(response.data);
+                          // Save the file metadata in the database
+                          new fileData({
                             GuildId: interaction.guildId,
                             ChannelID: interaction.channelId,
                             FileId: response.data.id,
                             mimeType: response.data.mimeType,
-                            FileName: response.data.name
-                        }).save()
-                
-                    } catch (err) {
-                        console.log(err)
-
-                        
+                            FileName: response.data.name,
+                          }).save();
+                        }
+                      } catch (err) {
+                        console.log(err);
+                      
                         const ErrorEmbed = new EmbedBuilder()
-                        .setColor("Green")
-                        .setTitle("Error occurred")
-                        .setDescription(err.message)
-
+                          .setColor("Green")
+                          .setTitle("Error occurred")
+                          .setDescription(err.message);
+                      
                         return inter.followUp({ embeds: [ErrorEmbed] });
-                    }
+                      }
 
                     await interaction.member.roles.add(VERIFIED_ROLE).catch(err => console.log(err));
 
