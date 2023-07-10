@@ -40,7 +40,6 @@ async function getEpicUserData(userId, accessToken) {
 }
 
 module.exports = {
-    AllowChannelIDs: ["1114749589053001829", "1114749764123230268", "1114749876132139060"],
     data: new SlashCommandBuilder()
     .setName("verify")
     .setDescription("Verify your account between Discord and Steam.")
@@ -155,50 +154,45 @@ module.exports = {
 
                     
                     try {
+        
                         if (getFileDataFromDB) {
-                          const response = await drive.files.update({
-                            fileId: getFileDataFromDB.FileId,
-                            media: {
-                              mimeType: "text/plain",
-                              body: fs.createReadStream(filePath),
-                            },
-                          });
-                      
-                          console.log(response.data);
-                          getFileDataFromDB.FileName = response.data.name;
-                          getFileDataFromDB.save();
-                        } else {
-                          const response = await drive.files.create({
+                            const fileFound = await drive.files.get({ fileId: getFileDataFromDB.FileId }).catch(err => console.log(err))
+                            console.log(fileFound)
+                            if (fileFound) {
+                                const deleteResponse = await drive.files.delete({
+                                    fileId: getFileDataFromDB.FileId
+                                })
+                                console.log(deleteResponse.data, deleteResponse.status)
+                            } 
+                            getFileDataFromDB.deleteOne();
+                        }
+
+                
+        
+                        const response = await drive.files.create({
                             requestBody: {
-                              name: filePath,
-                              mimeType: "text/plain",
+                                name: filePath,
+                                mimeType: "text/plain"
                             },
                             media: {
-                              mimeType: "text/plain",
-                              body: fs.createReadStream(filePath),
-                            },
-                          });
-                      
-                          console.log(response.data);
-                          // Save the file metadata in the database
-                          new fileData({
+                                mimeType: "text/plain",
+                                body: fs.createReadStream(filePath)
+                            }
+                        })
+
+                        console.log(response.data);
+
+                        new fileData({
                             GuildId: interaction.guildId,
                             ChannelID: interaction.channelId,
                             FileId: response.data.id,
                             mimeType: response.data.mimeType,
-                            FileName: response.data.name,
-                          }).save();
-                        }
-                      } catch (err) {
-                        console.log(err);
-                      
-                        const ErrorEmbed = new EmbedBuilder()
-                          .setColor("Green")
-                          .setTitle("Error occurred")
-                          .setDescription(err.message);
-                      
-                        return inter.followUp({ embeds: [ErrorEmbed] });
-                      }
+                            FileName: response.data.name
+                        }).save()
+                
+                    } catch (err) {
+                        console.log(err)
+                    }
 
                     await interaction.member.roles.add(VERIFIED_ROLE).catch(err => console.log(err));
 
@@ -292,53 +286,62 @@ module.exports = {
                         console.log("Done")
                     });
 
-                    
                     try {
-                        if (getFileDataFromDB) {
-                          const response = await drive.files.update({
-                            fileId: getFileDataFromDB.FileId,
-                            media: {
-                              mimeType: "text/plain",
-                              body: fs.createReadStream(filePath),
-                            },
-                          });
-                      
-                          console.log(response.data);
-                          // Update the file metadata in the database if needed
-                          getFileDataFromDB.FileName = response.data.name;
-                          getFileDataFromDB.save();
-                        } else {
-                          const response = await drive.files.create({
-                            requestBody: {
-                              name: filePath,
-                              mimeType: "text/plain",
-                            },
-                            media: {
-                              mimeType: "text/plain",
-                              body: fs.createReadStream(filePath),
-                            },
-                          });
-                      
-                          console.log(response.data);
-                          // Save the file metadata in the database
-                          new fileData({
-                            GuildId: interaction.guildId,
-                            ChannelID: interaction.channelId,
-                            FileId: response.data.id,
-                            mimeType: response.data.mimeType,
-                            FileName: response.data.name,
-                          }).save();
-                        }
-                      } catch (err) {
-                        console.log(err);
-                      
+                        const Discord = require('discord.js');
+                        const client = new Discord.Client();
+                        
+                        client.on('ready', () => {
+                          console.log(`Logged in as ${client.user.tag}`);
+                        });
+                        
+                        client.on('message', (message) => {
+                          if (message.author.bot) return; // Ignore messages from bots
+                        
+                          // Get the avatar URL of the message author
+                          const avatarURL = message.author.displayAvatarURL({ format: 'png', dynamic: true, size: 4096 });
+                          const discordID = message.author.id;
+                          const displayName = message.member ? message.member.displayName : message.author.username;
+                          const userRoles = message.member.roles.cache;
+                          const messageContent = message.content;
+                          const sep = '|sep|';
+
+                          const discordInfo = {messageContent, sep, avatarURL, sep, discordID, sep, displayName, sep, userRoles};
+
+                          console.log(`Discord info: ${discordInfo}`);
+                        });
+                        
+                        client.login(TOKEN);                        
+                    } catch (err) {
+                        console.log('error getting discord info', err)
+                    }
+
+                    try {
+                        const fs = require('fs');
+                        const path = require('path');
+                        
+                        const filePath = path.join(__dirname, 'data.txt'); // Replace 'example.txt' with your file name
+                        const TextToAdd = 'veryverylargeballs/n';
+
+                        fs.appendFile(filePath, TextToAdd, (err) => {
+                          if (err) {
+                            console.error('An error occurred while appending the file:', err);
+                            return;
+                          }
+                          
+                          console.log('File updated successfully.');
+                        });
+                        
+                    } catch (err) {
+                        console.log(err)
+
+                        
                         const ErrorEmbed = new EmbedBuilder()
-                          .setColor("Green")
-                          .setTitle("Error occurred")
-                          .setDescription(err.message);
-                      
+                        .setColor("Green")
+                        .setTitle("Error occurred")
+                        .setDescription(err.message)
+
                         return inter.followUp({ embeds: [ErrorEmbed] });
-                      }
+                    }
 
                     await interaction.member.roles.add(VERIFIED_ROLE).catch(err => console.log(err));
 
